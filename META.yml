@@ -1,13 +1,25 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Sphinx-Config
-version:      0.01
-version_from: lib/Sphinx/Config.pm
-installdirs:  site
+--- #YAML:1.0
+name:               Sphinx-Config
+version:            0.03
+abstract:           Sphinx search engine configuration file read/modify/write
+author:
+    - Jon Schutz <jon@jschutz.net>
+license:            unknown
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+build_requires:
+    ExtUtils::MakeMaker:  0
 requires:
-    Carp:                          0
-    FindBin:                       0
-    Test::More:                    0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30
+    Carp:        0
+    FindBin:     0
+    Storable:    0
+    Test::More:  0
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.52
+meta-spec:
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4

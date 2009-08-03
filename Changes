@@ -3,3 +3,9 @@ Revision history for Sphinx-Config
 0.01    2007-09-13
         First release
 
+0.02	2009-08-03
+	Added array support for case of multiple identical keys (rt.cpan.org #48358)
+	Added preserve_inheritance().
+
+0.03	2009-08-03
+	Added documentation related to previous changes.

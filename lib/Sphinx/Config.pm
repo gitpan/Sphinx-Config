@@ -3,6 +3,7 @@ package Sphinx::Config;
 use warnings;
 use strict;
 use Carp qw/croak/;
+use Storable qw/dclone/;
 
 =head1 NAME
 
@@ -10,11 +11,11 @@ Sphinx::Config - Sphinx search engine configuration file read/modify/write
 
 =head1 VERSION
 
-Version 0.01
+Version 0.03
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -38,7 +39,32 @@ our $VERSION = '0.01';
 sub new {
     my $class = shift;
 
-    bless { }, ref($class) || $class;
+    bless { _bestow => 1 }, ref($class) || $class;
+}
+
+=head2 preserve_inheritance
+
+    $c->preserve_inheritance(0);
+    $c->preserve_inheritance(1);
+    $pi = $c->preserve_inheritance(1);
+
+Set/get the current behaviour for preserving inherited values.  When
+set to a non-zero value (the default), if a value is set in a parent
+section, then it is automatically inherited by any child sections, and
+when the configuration file is saved, values that are implicit through
+inheritance are not shown.  When set to zero, each section is
+considered standalone and a complete set of values is shown in the
+saved file.
+
+This flag may be enabled and disabled selectively for calls to set() and save().
+
+=cut
+
+sub preserve_inheritance {
+    my $self = shift;
+    $self->{_bestow} = shift if @_;
+
+    return $self->{_bestow};
 }
 
 =head1 METHODS
@@ -117,7 +143,10 @@ sub parse {
 			}
 			die "Sphinx::Config: $filename:$line: Base section '$tok' does not exist" unless (defined $c && $c != $current);
 			$current->{_inherit} = $tok;
-			$current->{_data} = { %{$c->{_data}} };
+			push(@{$c->{_children} ||= []}, $current->{_name});
+			$current->{_data} = dclone($c->{_data} || {});
+
+			$current->{_inherited} = { map { $_ => 1 } keys %{$current->{_data}} };
 			$seq = "openblock";
 		    }
 		    elsif ($seq eq "openblock") {
@@ -135,7 +164,23 @@ sub parse {
 		    $current = undef;
 		}
 		elsif ($input =~ s/^\s*([\w]+)\s*=\s*(.*)\s*$//o) {
-		    $current->{_data}->{$1} = $2;
+		    my $k = $1;
+		    my $v = $2;
+		    if (exists($current->{_data}->{$k}) && ! $current->{_inherited}->{$k}) {
+			if (ref($current->{_data}->{$k}) eq 'ARRAY') {
+			    # append to existing array
+			    push(@{$current->{_data}->{$k}}, $v);
+			}
+			else {
+			    # promote to array
+			    $current->{_data}->{$k} = [ $current->{_data}->{$k}, $v ];
+			}
+		    }
+		    else {
+			# first or simple value
+			$current->{_data}->{$k} = $v;
+			$current->{_inherited}->{$k} = 0;
+		    }
 		}
 		elsif ($input =~ s/^\s+$//o) {
 		    # carry on
@@ -178,7 +223,12 @@ Each section is described by a hash with the following keys:
 =item * _inherited The name of the parent section, where applicable
 
 =item * _data A hash containing the name/value pairs which hold the
-configuration data for the section.
+configuration data for the section.  All values are simple data
+elements, except where the same key can appear multiple times in the
+configuration file with different values (such as in attribute
+declarations), in which case the value is an array ref.
+
+=item * _inherited A hash describing which data values have been inherited
 
 =back
 
@@ -233,8 +283,10 @@ sub get {
 
 Set the value or values of a section in the configuration.
 
-If varname is given, then the single parameter of that name in the given section
-is set to the specified value.
+If varname is given, then the single parameter of that name in the
+given section is set to the specified value.  If the value is an
+array, multiple entries will be created in the output file for the
+same key.
 
 If a hash of name/value pairs is given, then any existing values are replaced
 with the given hash.
@@ -242,6 +294,8 @@ with the given hash.
 If the section does not currently exist, a new one is appended.
 
 Returns the hash containing the current data values for the given section.
+
+See L<preserve_inheritance> for a description of how inherited values are handled.
 
 =cut
 
@@ -263,10 +317,32 @@ sub set {
 	}
 	else {
 	    $self->{_keys}->{$key}->{_data}->{$var} = $value;
+	    $self->{_keys}->{$key}->{_inherited}->{$var} = 0;
+	    for my $child (@{$self->{_keys}->{$key}->{_children} || []}) {
+		my $c = $self->{_keys}->{$type . ' ' . $child} or next;
+		if ($self->{_bestow}) {
+		    $c->{_data}->{$var} = $value if $c->{_inherited}->{$var};
+		}
+		else {
+		    $c->{_inherited}->{$var} = 0;
+		}
+	    }
 	}
     }
     elsif (ref($var) eq "HASH") {
-	$self->{_keys}->{$key}->{_data} = $var;
+	$self->{_keys}->{$key}->{_data} = dclone($var);
+	$self->{_keys}->{$key}->{_inherited}->{$_} = 0 for keys %$var;
+	for my $child (@{$self->{_keys}->{$key}->{_children} || []}) {
+	    my $c = $self->{_keys}->{$type . ' ' . $child} or next;
+	    for my $k (keys %$var) {
+		if ($self->{_bestow}) {
+		    $c->{_data}->{$k} = $var->{$k} if $c->{_inherited}->{$k};
+		}
+		else {
+		    $c->{_inherited}->{$k} = 0;
+		}
+	    }
+	}
     }
     else {
 	croak "Must provide variable name or hash, not " . ref($var);
@@ -293,16 +369,23 @@ sub as_string {
     my $s = $comment ? "$comment\n" : "";
     for my $c (@{$self->{_config}}) {
 	$s .= $c->{_type} . ($c->{_name} ? (" " . $c->{_name}) : '');
-	my %data = %{ $c->{_data}};
-	if ($c->{_inherit}) {
+	my $data = dclone($c->{_data});
+	if ($c->{_inherit} && $self->{_bestow}) {
 	    $s .= " : " . $c->{_inherit};
 	    my $base = $self->get($c->{_type}, $c->{_inherit});
-	    for (keys %$base) {
-		delete $data{$_} if defined $data{$_} && ($base->{$_} eq $data{$_});
-	    }
 	}
 	my $section = " {\n";
-	$section .= '        ' . $_ . ' = ' . $data{$_} . "\n" for sort keys %data;
+	for my $k (sort keys %$data) {
+	    next if $self->{_bestow} && $c->{_inherited}->{$k};
+	    if (ref($data->{$k}) eq 'ARRAY') {
+		for my $v (@{$data->{$k}}) {
+		    $section .= '        ' . $k . ' = ' . $v . "\n";
+		}
+	    }
+	    else {
+		$section .= '        ' . $k . ' = ' . $data->{$k} . "\n";
+	    }
+	}
 	$s .= $section . "}\n";
     }
 
@@ -317,6 +400,8 @@ sub as_string {
 Save the configuration to a file.
 
 The comment is inserted literally, so each line should begin with '#'.
+
+See L<preserve_inheritance> for a description of how inherited blocks are handled.
 
 =cut
 

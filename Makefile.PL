@@ -12,6 +12,7 @@ WriteMakefile(
         'Test::More' => 0,
 	'Carp' => 0,
 	'FindBin' => 0,
+	'Storable' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Sphinx-Config-*' },
