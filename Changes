@@ -9,3 +9,6 @@ Revision history for Sphinx-Config
 
 0.03	2009-08-03
 	Added documentation related to previous changes.
+
+0.04	2009-08-04
+	Added delete capability to set().

@@ -11,11 +11,11 @@ Sphinx::Config - Sphinx search engine configuration file read/modify/write
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 =head1 SYNOPSIS
 
@@ -293,6 +293,8 @@ with the given hash.
 
 If the section does not currently exist, a new one is appended.
 
+To delete a name/value pair, set $value to undef.
+
 Returns the hash containing the current data values for the given section.
 
 See L<preserve_inheritance> for a description of how inherited values are handled.
@@ -312,16 +314,37 @@ sub set {
 	$self->{_keys}->{$key} = $current;
     }
     if (! ref($var)) {
-	if ($var =~ m/^_/) {
-	    $self->{_keys}->{$key}->{$var} = $value;
+	if (! defined($var)) {
+	    delete $self->{_keys}->{$key};
+	}
+	elsif ($var =~ m/^_/) {
+	    if (defined $value) {
+		$self->{_keys}->{$key}->{$var} = $value;
+	    }
+	    else {
+		delete $self->{_keys}->{$key}->{$var};
+	    }
 	}
 	else {
-	    $self->{_keys}->{$key}->{_data}->{$var} = $value;
+	    if (defined $value) {
+		$self->{_keys}->{$key}->{_data}->{$var} = $value;
+	    }
+	    else {
+		delete $self->{_keys}->{$key}->{_data}->{$var};
+	    }
 	    $self->{_keys}->{$key}->{_inherited}->{$var} = 0;
+
 	    for my $child (@{$self->{_keys}->{$key}->{_children} || []}) {
 		my $c = $self->{_keys}->{$type . ' ' . $child} or next;
 		if ($self->{_bestow}) {
-		    $c->{_data}->{$var} = $value if $c->{_inherited}->{$var};
+		    if ($c->{_inherited}->{$var}) {
+			if (defined $value) {
+			    $c->{_data}->{$var} = $value;
+			}
+			else {
+			    delete $c->{_data}->{$var};
+			}
+		    }
 		}
 		else {
 		    $c->{_inherited}->{$var} = 0;
@@ -350,6 +373,7 @@ sub set {
 
     return $self->{_keys}->{$key}->{_data};
 }
+
 
 
 =head2 as_string

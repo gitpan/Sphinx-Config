@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Sphinx-Config
-version:            0.03
+version:            0.04
 abstract:           Sphinx search engine configuration file read/modify/write
 author:
     - Jon Schutz <jon@jschutz.net>
