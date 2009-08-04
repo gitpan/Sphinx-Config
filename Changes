@@ -12,3 +12,6 @@ Revision history for Sphinx-Config
 
 0.04	2009-08-04
 	Added delete capability to set().
+
+0.05	2009-08-04
+	Fixed problem with block deletion.

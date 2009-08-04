@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Sphinx-Config
-version:            0.04
+version:            0.05
 abstract:           Sphinx search engine configuration file read/modify/write
 author:
     - Jon Schutz <jon@jschutz.net>
@@ -11,10 +11,11 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    Carp:        0
-    FindBin:     0
-    Storable:    0
-    Test::More:  0
+    Carp:             0
+    FindBin:          0
+    List::MoreUtils:  0
+    Storable:         0
+    Test::More:       0
 no_index:
     directory:
         - t

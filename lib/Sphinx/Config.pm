@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use Carp qw/croak/;
 use Storable qw/dclone/;
+use List::MoreUtils qw/firstidx/;
 
 =head1 NAME
 
@@ -11,11 +12,11 @@ Sphinx::Config - Sphinx search engine configuration file read/modify/write
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 SYNOPSIS
 
@@ -315,7 +316,10 @@ sub set {
     }
     if (! ref($var)) {
 	if (! defined($var)) {
-	    delete $self->{_keys}->{$key};
+	    if (my $entry = delete $self->{_keys}->{$key}) {
+		my $i = firstidx { $_ == $entry } @{$self->{_config}};
+		splice(@{$self->{_config}}, $i, 1) if $i >= 0;
+	    }
 	}
 	elsif ($var =~ m/^_/) {
 	    if (defined $value) {
