@@ -15,3 +15,6 @@ Revision history for Sphinx-Config
 
 0.05	2009-08-04
 	Fixed problem with block deletion.
+
+0.06    2010-12-08
+        [rt.cpan.org #63549] Round-trip safe.  Incorporated patch contributed by Philip Gwyn.
