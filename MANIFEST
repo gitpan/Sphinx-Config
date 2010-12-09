@@ -12,3 +12,6 @@ t/boilerplate.t
 t/config.t
 t/pod-coverage.t
 t/pod.t
+t/sphinx.conf.dist
+t/sphinx2.conf
+t/sphinx3.conf

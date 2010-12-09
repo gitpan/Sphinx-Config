@@ -18,3 +18,6 @@ Revision history for Sphinx-Config
 
 0.06    2010-12-08
         [rt.cpan.org #63549] Round-trip safe.  Incorporated patch contributed by Philip Gwyn.
+
+0.07	2010-12-09   
+	Added missing test files to distribution
