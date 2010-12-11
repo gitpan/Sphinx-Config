@@ -10,13 +10,9 @@ use List::MoreUtils qw/firstidx/;
 
 Sphinx::Config - Sphinx search engine configuration file read/modify/write
 
-=head1 VERSION
-
-Version 0.07
-
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 SYNOPSIS
 
@@ -257,6 +253,7 @@ sub _find_section
         my $c;
         for (my $i = 0; $i <= $#$config; $i++) {
             $c = $config->[$i];
+            next unless $c->{_name};    # ignore searchd, indexer sections
             if( $c->{_name} eq $name && $c->{_type} eq $type ) {
                 return $c;
             }
@@ -482,7 +479,7 @@ sub set {
         if( $value ) {
             # Change inheritance
             unless( $self->_change_inherit( $key, $value ) ) {
-                croak "Sphinx::Config: Unable to find $name $value for inheritance";
+                croak "Sphinx::Config: Unable to find $type $value for inheritance";
             }
         }
     }
@@ -668,7 +665,7 @@ sub _set_inherit_lines {
 
     my $section = $self->{_keys}{ $key };
     croak "Can't find section $key" unless $section;
-    return if $section->{_new};
+    return 1 if $section->{_new};
 
     my $file = $self->{_file};
     my $pos  = $section->{_lines};

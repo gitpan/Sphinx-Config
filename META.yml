@@ -1,26 +1,18 @@
 --- #YAML:1.0
-name:               Sphinx-Config
-version:            0.07
-abstract:           Sphinx search engine configuration file read/modify/write
-author:
+name:                Sphinx-Config
+version:             0.08
+abstract:            Sphinx search engine configuration file read/modify/write
+license:             ~
+author:              
     - Jon Schutz <jon@jschutz.net>
-license:            unknown
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
-build_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    Carp:             0
-    FindBin:          0
-    List::MoreUtils:  0
-    Storable:         0
-    Test::More:       0
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.56
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
+    Carp:                          0
+    FindBin:                       0
+    List::MoreUtils:               0
+    Storable:                      0
+    Test::More:                    0
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3
