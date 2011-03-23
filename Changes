@@ -24,3 +24,6 @@ Revision history for Sphinx-Config
 
 0.08	2010-12-11
 	Minor fixes.
+
+0.09    2011-03-23
+        Fixed issue where configs not created from file would fail on save.

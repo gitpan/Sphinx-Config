@@ -12,7 +12,7 @@ Sphinx::Config - Sphinx search engine configuration file read/modify/write
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 =head1 SYNOPSIS
 
@@ -795,6 +795,9 @@ sub as_string {
     # By using a copy, ->as_string can be called multiple times, even
     # if we append variables to a section.  Otherwise the new variables
     # would be added multiple times
+    if (! $self->{_file} || ! @{$self->{_file}}) {
+        return $self->as_string_new($comment);
+    }
     my $file = [@{ $self->{_file} }];
 
     # Find new sections and variables
@@ -866,6 +869,47 @@ sub _var_as_string
         $section .= '        ' . $k . ' = ' . $value . "\n";
     }
     return $section;
+}
+
+=head2 as_string_new
+
+    $s = $c->as_string_new
+    $s = $c->as_string_new($comment)
+
+Returns the configuration as a string, optionally with a comment prepended,
+without attempting to preserve formatting from the original file.
+
+The comment is inserted literally, so each line should begin with '#'.
+
+=cut
+
+sub as_string_new {
+    my ($self, $comment) = @_;
+
+    my $s = $comment ? "$comment\n" : "";
+    for my $c (@{$self->{_config}}) {
+	$s .= $c->{_type} . ($c->{_name} ? (" " . $c->{_name}) : '');
+	my $data = dclone($c->{_data});
+	if ($c->{_inherit} && $self->{_bestow}) {
+	    $s .= " : " . $c->{_inherit};
+	    my $base = $self->get($c->{_type}, $c->{_inherit});
+	}
+	my $section = " {\n";
+	for my $k (sort keys %$data) {
+	    next if $self->{_bestow} && $c->{_inherited}->{$k};
+	    if (ref($data->{$k}) eq 'ARRAY') {
+		for my $v (@{$data->{$k}}) {
+		    $section .= '        ' . $k . ' = ' . $v . "\n";
+		}
+	    }
+	    else {
+		$section .= '        ' . $k . ' = ' . $data->{$k} . "\n";
+	    }
+	}
+	$s .= $section . "}\n";
+    }
+
+    return $s;
 }
 
 =head1 SEE ALSO
